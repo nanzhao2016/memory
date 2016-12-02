@@ -14,18 +14,18 @@ from datetime import datetime
 sc = SparkContext("local", "MyApp")
 sqlContext = SQLContext(sc)
 
-path_ = 'C:/Users/OPEN/Documents/NanZHAO/Formation_BigData/Memoires/'
+path_ = 'C:/Users/OPEN/Documents/NanZHAO/Formation_BigData/Memoires/tmp/db/'
 data_origin = 'velib-stations_v2.json'
-data_parquet = 'tmp/db/velib.data'
-data_format_update = 'tmp/db/velib.data.format.update3'
-table_country = 'tmp/db/table_country.csv'
-table_country_company = 'tmp/db/table_country_company.csv'
-table_country_company_contract = 'tmp/db/table_country_company_contract.csv'
-table_country_company_contract_name = 'tmp/db/table_country_company_contract_name.csv'
-table_country_company_contract_name_bonus = 'tmp/db/table_country_company_contract_name_bonus.csv'
-table_country_company_contract_name_bonus_banking = 'tmp/db/table_country_company_contract_name_bonus_banking.csv'
-table_country_company_contract_name_bonus_banking_status = 'tmp/db/table_country_company_contract_name_bonus_banking_status.csv'
-table_country_company_contract_name_bonus_banking_status_bikestands = 'tmp/db/table_country_company_contract_name_bonus_banking_status_bikestands.csv'
+data_parquet = 'velib.data'
+data_format_update = 'velib.data.format.update3'
+table_country = 'table_country.csv'
+table_country_company = 'table_country_company.csv'
+table_country_company_contract = 'table_country_company_contract.csv'
+table_country_company_contract_name = 'table_country_company_contract_name.csv'
+table_country_company_contract_name_bonus = 'table_country_company_contract_name_bonus.csv'
+table_country_company_contract_name_bonus_banking = 'table_country_company_contract_name_bonus_banking.csv'
+table_country_company_contract_name_bonus_banking_status = 'table_country_company_contract_name_bonus_banking_status.csv'
+table_country_company_contract_name_bonus_banking_status_bikestands = 'table_country_company_contract_name_bonus_banking_status_bikestands.csv'
 
 
 class DataBasicFunctions(object) :
