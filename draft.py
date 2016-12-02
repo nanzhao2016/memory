@@ -47,6 +47,9 @@ class DataBasicFunctions(object) :
 	def writeParquet(self, df, write):
 		df.write.parquet(os.path.join(self.p, write))
 	
+	def writeCsv(self, df, write):
+		df.toPandas().to_csv(os.path.join(self.p, write), sep=';', header=True, index=False, encoding = 'utf-8')
+	
 	def getSchema_parquet(self, read):
 		df = sqlContext.read.parquet(os.path.join(self.p, read))
 		print(df.printSchema())
@@ -103,37 +106,46 @@ def analyseDescription(dataBasicFunctionsObject):
 	#country = subset.select("country").distinct().toPandas()['country'].values.tolist()
 	#v1 = subset.distinct()
 	var = data.select("country").groupby(data.country).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country), sep=';', header=True, index=False, encoding = 'utf-8')
 	
 	var = data.select("country", "company").groupby(data.country, data.company).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country_company)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company), sep=';', header=True, index=False, encoding = 'utf-8')
 	
 	var = data.select("country", "company", "contract_name").groupby(data.country, data.contract_name, data.company).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country_company_contract)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract), sep=';', header=True, index=False, encoding = 'utf-8')
 	
 	var = data.select("country", "company", "contract_name", "name").groupby(data.country, data.contract_name, data.name, data.company).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name), sep=';', header=True, index=False, encoding = 'utf-8')
-	
-	var = data.select("country", "company", "contract_name", "name").groupby(data.country, data.contract_name, data.name, data.company).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country_company_contract_name)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name), sep=';', header=True, index=False, encoding = 'utf-8')
 	
 	var = data.select("country", "company", "contract_name", "name", "bonus").groupby(data.country, data.contract_name, data.name, data.company, data.bonus).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country_company_contract_name_bonus)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus), sep=';', header=True, index=False, encoding = 'utf-8')
 	
 	var = data.select("country", "company", "contract_name", "name", "bonus", "banking").groupby(data.country, data.contract_name, data.name, data.company, data.bonus, data.banking).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus_banking), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country_company_contract_name_bonus_banking)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus_banking), sep=';', header=True, index=False, encoding = 'utf-8')
 	
 	var = data.select("country", "company", "contract_name", "name", "bonus", "banking", "status").groupby(data.country, data.contract_name, data.name, data.company, data.bonus, data.banking, data.status).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus_banking_status), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country_company_contract_name_bonus_banking_status)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus_banking_status), sep=';', header=True, index=False, encoding = 'utf-8')
 	
 	var = data.select("country", "company", "contract_name", "name", "bonus", "banking", "status", "bike_stands").groupby(data.country, data.contract_name, data.name, data.company, data.bonus, data.banking, data.status, data.bike_stands).count()
-	var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus_banking_status_bikestands), sep=';', header=True, index=False, encoding = 'utf-8')
+	dataBasicFunctionsObject.writeCsv(var, table_country_company_contract_name_bonus_banking_status_bikestands)
+	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus_banking_status_bikestands), sep=';', header=True, index=False, encoding = 'utf-8')
 	#number = v2.count()
 	#print(v2.orderBy("country").show(number))
 	print("Saved in tables:", table_country, table_country_company, table_country_company_contract, table_country_company_contract_name, table_country_company_contract_name_bonus, table_country_company_contract_name_bonus_banking, table_country_company_contract_name_bonus_banking_status, table_country_company_contract_name_bonus_banking_status_bikestands, "\n")
 
 def getSchemaInformation(dataBasicFunctionsObject, read):
 	dataBasicFunctionsObject.getSchema_parquet(read)
+	
+def filterData(dataBasicFunctionsObject, read, write):
+	df = dataBasicFunctionsObject.loadParquetData(read)
+	df = df.filter(df.contract_name=="Paris")
 	
 def main(avg):
 	velib = DataBasicFunctions(path_, data_origin)
