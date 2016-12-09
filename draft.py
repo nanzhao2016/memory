@@ -6,13 +6,22 @@ set PYTHONIOENCODING=utf-8
 
 from pyspark import SparkConf, SparkContext, RDD, SQLContext
 from pyspark.sql import Row
+from pyspark.sql import SparkSession
 import sys, json, os, calendar
 from pyspark.sql.types import LongType, DateType, TimestampType, IntegerType, StringType
-from pyspark.sql.functions import udf, col
+from pyspark.sql.functions import udf, col, to_date, lit
 from datetime import datetime
 
 sc = SparkContext("local", "MyApp")
-sqlContext = SQLContext(sc)
+#sqlContext = SQLContext(sc)
+
+sqlContext = SparkSession.builder \
+	.master("local") \
+    .appName("Bike Sharing") \
+    .config("spark.some.config.option", "some-value") \
+    .getOrCreate()
+
+
 
 path_ = 'C:/Users/OPEN/Documents/NanZHAO/Formation_BigData/Memoires/tmp/db/'
 data_origin = 'velib-stations_v2.json'
@@ -26,7 +35,8 @@ table_country_company_contract_name_bonus = 'table_country_company_contract_name
 table_country_company_contract_name_bonus_banking = 'table_country_company_contract_name_bonus_banking.csv'
 table_country_company_contract_name_bonus_banking_status = 'table_country_company_contract_name_bonus_banking_status.csv'
 table_country_company_contract_name_bonus_banking_status_bikestands = 'table_country_company_contract_name_bonus_banking_status_bikestands.csv'
-
+paris_parquet = 'all_paris'
+paris_week_1 = 'paris_first_week.csv'
 
 class DataBasicFunctions(object) :
 	def __init__(self, path_, dataName):
@@ -53,6 +63,7 @@ class DataBasicFunctions(object) :
 	def getSchema_parquet(self, read):
 		df = sqlContext.read.parquet(os.path.join(self.p, read))
 		print(df.printSchema())
+		print(df.show(10))
 		
 	def updateDataFormat(self, df, droplist):
 		df = df.select([column for column in df.columns if column not in droplist]) 
@@ -76,7 +87,18 @@ class DataBasicFunctions(object) :
 		udf_company = udf(lambda x: x.replace('VÃ©loCitÃ©', 'VéloCité').replace('Le vÃ©lo', 'Le vélo').replace('VÃ©lo\'V', 'Vélo\'V').replace('vÃ©lOstan\'lib', 'vélOstan\'lib').replace('VÃ©lÃ´', 'Vélô').replace('GÃ¶teborg', 'Göteborg'), StringType())
 		df = df.withColumn('company', udf_company(col('company')))
 		
-		return(df)	
+		return(df)
+	
+	def filterByDate(self, df, date_str):
+		dates = to_date(lit(date_str)).cast(DateType())
+		return (df.where(df.date == dates))
+		
+	def filterBetweenDates(self, df, dates):
+		date_from, date_to = [to_date(lit(s)).cast(TimestampType()) for s in dates]
+		return (df.where((df.date > date_from)& (df.date < date_to)))
+	
+	def filterByContractName(self, df, name):
+		return (df.filter(df.contract_name == name))
 
 #step 1
 def saveVelibSourceData(dataBasicFunctionsObject):
@@ -140,12 +162,32 @@ def analyseDescription(dataBasicFunctionsObject):
 	#print(v2.orderBy("country").show(number))
 	print("Saved in tables:", table_country, table_country_company, table_country_company_contract, table_country_company_contract_name, table_country_company_contract_name_bonus, table_country_company_contract_name_bonus_banking, table_country_company_contract_name_bonus_banking_status, table_country_company_contract_name_bonus_banking_status_bikestands, "\n")
 
+#step 4
 def getSchemaInformation(dataBasicFunctionsObject, read):
 	dataBasicFunctionsObject.getSchema_parquet(read)
-	
-def filterData(dataBasicFunctionsObject, read, write):
+
+#step 5	
+def filterData(dataBasicFunctionsObject, option, conditions, read, write):
 	df = dataBasicFunctionsObject.loadParquetData(read)
-	df = df.filter(df.contract_name=="Paris")
+	if option == "contract":
+		df = dataBasicFunctionsObject.filterByContractName(df, conditions)
+		dataBasicFunctionsObject.writeParquet(df, write)
+	elif option == "one-day":
+		df = dataBasicFunctionsObject.filterByDate(df, conditions)
+		dataBasicFunctionsObject.writeCsv(df, write)
+	elif option == "two-day":
+		df = dataBasicFunctionsObject.filterBetweenDates(df, conditions)
+		dataBasicFunctionsObject.writeCsv(df, write)
+		
+	print(df.count())
+	print(df.show(10))
+	
+def filterData_Paris(dataBasicFunctionsObject, read, dates, write):
+	df = dataBasicFunctionsObject.loadParquetData(read)
+	df = dataBasicFunctionsObject.filterBetweenDates(df, dates)
+	dataBasicFunctionsObject.writeCsv(df, write)
+	print(df.count())
+	print(df.show(10))
 	
 def main(avg):
 	velib = DataBasicFunctions(path_, data_origin)
@@ -162,6 +204,17 @@ def main(avg):
 	elif avg == "4":
 		print("\nShow schema information.\n")
 		getSchemaInformation(velib, data_format_update)	
+	elif avg == "5":
+		print("\nFilter a sub-dataframe.\n")
+		option = "two-day"
+		conditions = ("2016-08-23", "2016-08-31")
+		filter_out = "08-24-30.csv"
+		filterData(velib, option, conditions, data_format_update, filter_out)
+	elif avg == "6":
+		print("\nFilter a week data from Paris.\n")
+		dates = ("2016-08-23", "2016-08-31")
+		filterData_Paris(velib, paris_parquet, dates, paris_week_1)
+		
 	else:
 		print("\nProcess does not exist, programme has stopped, please try again. \n")
 		print("Available process: \n")
@@ -169,6 +222,8 @@ def main(avg):
 		print("2. Update the format for the original data\n")
 		print("3. Basical descriptive analysis\n")
 		print("4. Schema information\n")
+		print("5. Dataframe filter\n")
+		print("6. Get a week information from Paris\n")
 	
 
 if __name__ == "__main__":
