@@ -8,7 +8,7 @@ from pyspark import SparkConf, SparkContext, RDD, SQLContext
 from pyspark.sql import Row
 from pyspark.sql import SparkSession
 import sys, json, os, calendar
-from pyspark.sql.types import LongType, DateType, TimestampType, IntegerType, StringType
+from pyspark.sql.types import LongType, DateType, TimestampType, IntegerType, StringType, DoubleType
 from pyspark.sql.functions import udf, col, to_date, lit
 from datetime import datetime
 
@@ -35,8 +35,10 @@ table_country_company_contract_name_bonus = 'table_country_company_contract_name
 table_country_company_contract_name_bonus_banking = 'table_country_company_contract_name_bonus_banking.csv'
 table_country_company_contract_name_bonus_banking_status = 'table_country_company_contract_name_bonus_banking_status.csv'
 table_country_company_contract_name_bonus_banking_status_bikestands = 'table_country_company_contract_name_bonus_banking_status_bikestands.csv'
+table_country_company_contract_name_bonus_banking_bikestands = 'table_country_company_contract_name_bonus_banking_bikestands.csv'
 paris_parquet = 'all_paris'
 paris_week_1 = 'paris_first_week.csv'
+station_location = 'station_location.csv'
 
 class DataBasicFunctions(object) :
 	def __init__(self, path_, dataName):
@@ -58,7 +60,7 @@ class DataBasicFunctions(object) :
 		df.write.parquet(os.path.join(self.p, write))
 	
 	def writeCsv(self, df, write):
-		df.toPandas().to_csv(os.path.join(self.p, write), sep=';', header=True, index=False, encoding = 'utf-8')
+		df.toPandas().to_csv(os.path.join(self.p, write), sep=';', header=True, index=False, encoding='utf-8')
 	
 	def getSchema_parquet(self, read):
 		df = sqlContext.read.parquet(os.path.join(self.p, read))
@@ -160,7 +162,9 @@ def analyseDescription(dataBasicFunctionsObject):
 	#var.toPandas().to_csv(os.path.join(dataBasicFunctionsObject.p, table_country_company_contract_name_bonus_banking_status_bikestands), sep=';', header=True, index=False, encoding = 'utf-8')
 	#number = v2.count()
 	#print(v2.orderBy("country").show(number))
-	print("Saved in tables:", table_country, table_country_company, table_country_company_contract, table_country_company_contract_name, table_country_company_contract_name_bonus, table_country_company_contract_name_bonus_banking, table_country_company_contract_name_bonus_banking_status, table_country_company_contract_name_bonus_banking_status_bikestands, "\n")
+	var = data.select("country", "company", "contract_name", "name", "bonus", "banking", "bike_stands").groupby(data.country, data.contract_name, data.name, data.company, data.bonus, data.banking, data.bike_stands).count()
+	dataBasicFunctionsObject.writeCsv(var, table_country_company_contract_name_bonus_banking_bikestands)
+	print("Saved in tables:", table_country, table_country_company, table_country_company_contract, table_country_company_contract_name, table_country_company_contract_name_bonus, table_country_company_contract_name_bonus_banking, table_country_company_contract_name_bonus_banking_status, table_country_company_contract_name_bonus_banking_status_bikestands, table_country_company_contract_name_bonus_banking_bikestands, "\n")
 
 #step 4
 def getSchemaInformation(dataBasicFunctionsObject, read):
@@ -181,13 +185,32 @@ def filterData(dataBasicFunctionsObject, option, conditions, read, write):
 		
 	print(df.count())
 	print(df.show(10))
-	
+
+#step 6	
 def filterData_Paris(dataBasicFunctionsObject, read, dates, write):
 	df = dataBasicFunctionsObject.loadParquetData(read)
 	df = dataBasicFunctionsObject.filterBetweenDates(df, dates)
 	dataBasicFunctionsObject.writeCsv(df, write)
 	print(df.count())
 	print(df.show(10))
+
+#step 7	
+def getLocation(dataBasicFunctionsObject, read, write):
+	df = dataBasicFunctionsObject.loadParquetData(read)
+	keeplist = ["banking", "bike_stands", "bonus", "contract_name", "country", "name", "number", "position"]
+	df = df.select([column for column in df.columns if column in keeplist]) 
+	df = df.distinct()
+	"""
+	print(df.printSchema())
+	print(df.count())
+	print(df.show(10))
+	"""
+	df = df.withColumn('lat', col('position')['lat'].cast(DoubleType()))
+	df = df.withColumn('lng', col('position')['lng'].cast(DoubleType()))
+	df = df.drop('position')
+	print(df.printSchema())
+	print(df.show(10))
+	dataBasicFunctionsObject.writeCsv(df, write)
 	
 def main(avg):
 	velib = DataBasicFunctions(path_, data_origin)
@@ -203,7 +226,8 @@ def main(avg):
 		analyseDescription(velib)
 	elif avg == "4":
 		print("\nShow schema information.\n")
-		getSchemaInformation(velib, data_format_update)	
+		data_to_read = data_parquet # data_format_update
+		getSchemaInformation(velib, data_to_read)	
 	elif avg == "5":
 		print("\nFilter a sub-dataframe.\n")
 		option = "two-day"
@@ -214,7 +238,9 @@ def main(avg):
 		print("\nFilter a week data from Paris.\n")
 		dates = ("2016-08-23", "2016-08-31")
 		filterData_Paris(velib, paris_parquet, dates, paris_week_1)
-		
+	elif avg == "7":
+		print("\nGet geographic information.\n")
+		getLocation(velib, data_parquet, station_location)	
 	else:
 		print("\nProcess does not exist, programme has stopped, please try again. \n")
 		print("Available process: \n")
@@ -224,6 +250,7 @@ def main(avg):
 		print("4. Schema information\n")
 		print("5. Dataframe filter\n")
 		print("6. Get a week information from Paris\n")
+		print("7. Get georaphic information\n")
 	
 
 if __name__ == "__main__":
